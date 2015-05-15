@@ -200,16 +200,11 @@ err_area:
 
 static void free_area(struct pstore *ps)
 {
-	if (ps->area)
-		vfree(ps->area);
+	vfree(ps->area);
 	ps->area = NULL;
-
-	if (ps->zero_area)
-		vfree(ps->zero_area);
+	vfree(ps->zero_area);
 	ps->zero_area = NULL;
-
-	if (ps->header_area)
-		vfree(ps->header_area);
+	vfree(ps->header_area);
 	ps->header_area = NULL;
 }
 
@@ -546,6 +541,9 @@ static int read_exceptions(struct pstore *ps,
 		r = insert_exceptions(ps, area, callback, callback_context,
 				      &full);
 
+		if (!full)
+			memcpy(ps->area, area, ps->store->chunk_size << SECTOR_SHIFT);
+
 		dm_bufio_release(bp);
 
 		dm_bufio_forget(client, chunk);
@@ -602,8 +600,7 @@ static void persistent_dtr(struct dm_exception_store *store)
 	free_area(ps);
 
 	/* Allocated in persistent_read_metadata */
-	if (ps->callbacks)
-		vfree(ps->callbacks);
+	vfree(ps->callbacks);
 
 	kfree(ps);
 }

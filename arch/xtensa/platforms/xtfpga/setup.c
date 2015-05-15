@@ -135,11 +135,11 @@ static void __init update_local_mac(struct device_node *node)
 
 static int __init machine_setup(void)
 {
-	struct device_node *serial;
+	struct device_node *clock;
 	struct device_node *eth = NULL;
 
-	for_each_compatible_node(serial, NULL, "ns16550a")
-		update_clock_frequency(serial);
+	for_each_node_by_name(clock, "main-oscillator")
+		update_clock_frequency(clock);
 
 	if ((eth = of_find_compatible_node(eth, NULL, "opencores,ethoc")))
 		update_local_mac(eth);
@@ -189,6 +189,7 @@ void __init platform_calibrate_ccount(void)
 #include <linux/serial_8250.h>
 #include <linux/if.h>
 #include <net/ethoc.h>
+#include <linux/usb/c67x00.h>
 
 /*----------------------------------------------------------------------------
  *  Ethernet -- OpenCores Ethernet MAC (ethoc driver)
@@ -233,6 +234,38 @@ static struct platform_device ethoc_device = {
 };
 
 /*----------------------------------------------------------------------------
+ *  USB Host/Device -- Cypress CY7C67300
+ */
+
+static struct resource c67x00_res[] = {
+	[0] = { /* register space */
+		.start = C67X00_PADDR,
+		.end   = C67X00_PADDR + C67X00_SIZE - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = { /* IRQ number */
+		.start = C67X00_IRQ,
+		.end   = C67X00_IRQ,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
+static struct c67x00_platform_data c67x00_pdata = {
+	.sie_config = C67X00_SIE1_HOST | C67X00_SIE2_UNUSED,
+	.hpi_regstep = 4,
+};
+
+static struct platform_device c67x00_device = {
+	.name = "c67x00",
+	.id = -1,
+	.num_resources = ARRAY_SIZE(c67x00_res),
+	.resource = c67x00_res,
+	.dev = {
+		.platform_data = &c67x00_pdata,
+	},
+};
+
+/*----------------------------------------------------------------------------
  *  UART
  */
 
@@ -268,6 +301,7 @@ static struct platform_device xtavnet_uart = {
 /* platform devices */
 static struct platform_device *platform_devices[] __initdata = {
 	&ethoc_device,
+	&c67x00_device,
 	&xtavnet_uart,
 };
 
@@ -290,6 +324,7 @@ static int __init xtavnet_init(void)
 	 * knows whether they set it correctly on the DIP switches.
 	 */
 	pr_info("XTFPGA: Ethernet MAC %pM\n", ethoc_pdata.hwaddr);
+	ethoc_pdata.eth_clkfreq = *(long *)XTFPGA_CLKFRQ_VADDR;
 
 	return 0;
 }

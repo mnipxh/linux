@@ -17,7 +17,6 @@
 
 #include <linux/module.h>
 #include <linux/pci.h>
-#include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/pagemap.h>
 #include <linux/agp_backend.h>
@@ -94,6 +93,7 @@ static struct _intel_private {
 #define IS_IRONLAKE	intel_private.driver->is_ironlake
 #define HAS_PGTBL_EN	intel_private.driver->has_pgtbl_enable
 
+#if IS_ENABLED(CONFIG_AGP_INTEL)
 static int intel_gtt_map_memory(struct page **pages,
 				unsigned int num_entries,
 				struct sg_table *st)
@@ -153,7 +153,6 @@ static struct page *i8xx_alloc_pages(void)
 		__free_pages(page, 2);
 		return NULL;
 	}
-	get_page(page);
 	atomic_inc(&agp_bridge->current_memory_agp);
 	return page;
 }
@@ -164,10 +163,10 @@ static void i8xx_destroy_pages(struct page *page)
 		return;
 
 	set_pages_wb(page, 4);
-	put_page(page);
 	__free_pages(page, 2);
 	atomic_dec(&agp_bridge->current_memory_agp);
 }
+#endif
 
 #define I810_GTT_ORDER 4
 static int i810_setup(void)
@@ -208,6 +207,7 @@ static void i810_cleanup(void)
 	free_gatt_pages(intel_private.i81x_gtt_table, I810_GTT_ORDER);
 }
 
+#if IS_ENABLED(CONFIG_AGP_INTEL)
 static int i810_insert_dcache_entries(struct agp_memory *mem, off_t pg_start,
 				      int type)
 {
@@ -225,7 +225,7 @@ static int i810_insert_dcache_entries(struct agp_memory *mem, off_t pg_start,
 		intel_private.driver->write_entry(addr,
 						  i, type);
 	}
-	readl(intel_private.gtt+i-1);
+	wmb();
 
 	return 0;
 }
@@ -288,6 +288,7 @@ static void intel_i810_free_by_type(struct agp_memory *curr)
 	}
 	kfree(curr);
 }
+#endif
 
 static int intel_gtt_setup_scratch_page(void)
 {
@@ -297,7 +298,6 @@ static int intel_gtt_setup_scratch_page(void)
 	page = alloc_page(GFP_KERNEL | GFP_DMA32 | __GFP_ZERO);
 	if (page == NULL)
 		return -ENOMEM;
-	get_page(page);
 	set_pages_uc(page, 1);
 
 	if (intel_private.needs_dmar) {
@@ -329,7 +329,7 @@ static void i810_write_entry(dma_addr_t addr, unsigned int entry,
 		break;
 	}
 
-	writel(addr | pte_flags, intel_private.gtt + entry);
+	writel_relaxed(addr | pte_flags, intel_private.gtt + entry);
 }
 
 static const struct aper_size_info_fixed intel_fake_agp_sizes[] = {
@@ -557,7 +557,6 @@ static void intel_gtt_teardown_scratch_page(void)
 	set_pages_wb(intel_private.scratch_page, 1);
 	pci_unmap_page(intel_private.pcidev, intel_private.scratch_page_dma,
 		       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
-	put_page(intel_private.scratch_page);
 	__free_page(intel_private.scratch_page);
 }
 
@@ -645,7 +644,9 @@ static int intel_gtt_init(void)
 		return -ENOMEM;
 	}
 
+#if IS_ENABLED(CONFIG_AGP_INTEL)
 	global_cache_flush();   /* FIXME: ? */
+#endif
 
 	intel_private.stolen_size = intel_gtt_stolen_size();
 
@@ -666,6 +667,7 @@ static int intel_gtt_init(void)
 	return 0;
 }
 
+#if IS_ENABLED(CONFIG_AGP_INTEL)
 static int intel_fake_agp_fetch_size(void)
 {
 	int num_sizes = ARRAY_SIZE(intel_fake_agp_sizes);
@@ -684,6 +686,7 @@ static int intel_fake_agp_fetch_size(void)
 
 	return 0;
 }
+#endif
 
 static void i830_cleanup(void)
 {
@@ -732,7 +735,7 @@ static void i830_write_entry(dma_addr_t addr, unsigned int entry,
 	if (flags ==  AGP_USER_CACHED_MEMORY)
 		pte_flags |= I830_PTE_SYSTEM_CACHED;
 
-	writel(addr | pte_flags, intel_private.gtt + entry);
+	writel_relaxed(addr | pte_flags, intel_private.gtt + entry);
 }
 
 bool intel_enable_gtt(void)
@@ -795,6 +798,7 @@ static int i830_setup(void)
 	return 0;
 }
 
+#if IS_ENABLED(CONFIG_AGP_INTEL)
 static int intel_fake_agp_create_gatt_table(struct agp_bridge_data *bridge)
 {
 	agp_bridge->gatt_table_real = NULL;
@@ -819,6 +823,7 @@ static int intel_fake_agp_configure(void)
 
 	return 0;
 }
+#endif
 
 static bool i830_check_flags(unsigned int flags)
 {
@@ -853,10 +858,11 @@ void intel_gtt_insert_sg_entries(struct sg_table *st,
 			j++;
 		}
 	}
-	readl(intel_private.gtt+j-1);
+	wmb();
 }
 EXPORT_SYMBOL(intel_gtt_insert_sg_entries);
 
+#if IS_ENABLED(CONFIG_AGP_INTEL)
 static void intel_gtt_insert_pages(unsigned int first_entry,
 				   unsigned int num_entries,
 				   struct page **pages,
@@ -869,7 +875,7 @@ static void intel_gtt_insert_pages(unsigned int first_entry,
 		intel_private.driver->write_entry(addr,
 						  j, flags);
 	}
-	readl(intel_private.gtt+j-1);
+	wmb();
 }
 
 static int intel_fake_agp_insert_entries(struct agp_memory *mem,
@@ -922,6 +928,7 @@ out_err:
 	mem->is_flushed = true;
 	return ret;
 }
+#endif
 
 void intel_gtt_clear_range(unsigned int first_entry, unsigned int num_entries)
 {
@@ -931,10 +938,11 @@ void intel_gtt_clear_range(unsigned int first_entry, unsigned int num_entries)
 		intel_private.driver->write_entry(intel_private.scratch_page_dma,
 						  i, 0);
 	}
-	readl(intel_private.gtt+i-1);
+	wmb();
 }
 EXPORT_SYMBOL(intel_gtt_clear_range);
 
+#if IS_ENABLED(CONFIG_AGP_INTEL)
 static int intel_fake_agp_remove_entries(struct agp_memory *mem,
 					 off_t pg_start, int type)
 {
@@ -976,6 +984,7 @@ static struct agp_memory *intel_fake_agp_alloc_by_type(size_t pg_count,
 	/* always return NULL for other allocation types for now */
 	return NULL;
 }
+#endif
 
 static int intel_alloc_chipset_flush_resource(void)
 {
@@ -1097,7 +1106,7 @@ static void i965_write_entry(dma_addr_t addr,
 
 	/* Shift high bits down */
 	addr |= (addr >> 28) & 0xf0;
-	writel(addr | pte_flags, intel_private.gtt + entry);
+	writel_relaxed(addr | pte_flags, intel_private.gtt + entry);
 }
 
 static int i9xx_setup(void)
@@ -1129,6 +1138,7 @@ static int i9xx_setup(void)
 	return 0;
 }
 
+#if IS_ENABLED(CONFIG_AGP_INTEL)
 static const struct agp_bridge_driver intel_fake_agp_driver = {
 	.owner			= THIS_MODULE,
 	.size_type		= FIXED_APER_SIZE,
@@ -1150,6 +1160,7 @@ static const struct agp_bridge_driver intel_fake_agp_driver = {
 	.agp_destroy_page	= agp_generic_destroy_page,
 	.agp_destroy_pages      = agp_generic_destroy_pages,
 };
+#endif
 
 static const struct intel_gtt_driver i81x_gtt_driver = {
 	.gen = 1,
@@ -1367,11 +1378,13 @@ int intel_gmch_probe(struct pci_dev *bridge_pdev, struct pci_dev *gpu_pdev,
 
 	intel_private.refcount++;
 
+#if IS_ENABLED(CONFIG_AGP_INTEL)
 	if (bridge) {
 		bridge->driver = &intel_fake_agp_driver;
 		bridge->dev_private_data = &intel_private;
 		bridge->dev = bridge_pdev;
 	}
+#endif
 
 	intel_private.bridge_dev = pci_dev_get(bridge_pdev);
 
@@ -1425,5 +1438,5 @@ void intel_gmch_remove(void)
 }
 EXPORT_SYMBOL(intel_gmch_remove);
 
-MODULE_AUTHOR("Dave Jones <davej@redhat.com>");
+MODULE_AUTHOR("Dave Jones, Various @Intel");
 MODULE_LICENSE("GPL and additional rights");

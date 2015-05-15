@@ -19,13 +19,14 @@
 #define _XTENSA_VECTORS_H
 
 #include <variant/core.h>
+#include <platform/hardware.h>
 
 #define XCHAL_KIO_CACHED_VADDR		0xe0000000
 #define XCHAL_KIO_BYPASS_VADDR		0xf0000000
 #define XCHAL_KIO_DEFAULT_PADDR		0xf0000000
 #define XCHAL_KIO_SIZE			0x10000000
 
-#if XCHAL_HAVE_PTP_MMU && XCHAL_HAVE_SPANNING_WAY && CONFIG_OF
+#if XCHAL_HAVE_PTP_MMU && XCHAL_HAVE_SPANNING_WAY && defined(CONFIG_OF)
 #define XCHAL_KIO_PADDR			xtensa_get_kio_paddr()
 #else
 #define XCHAL_KIO_PADDR			XCHAL_KIO_DEFAULT_PADDR
@@ -51,13 +52,13 @@
   /* MMU Not being used - Virtual == Physical */
 
   /* VECBASE */
-  #define VIRTUAL_MEMORY_ADDRESS	0x00002000
+  #define VIRTUAL_MEMORY_ADDRESS	(PLATFORM_DEFAULT_MEM_START + 0x2000)
 
   /* Location of the start of the kernel text, _start */
-  #define KERNELOFFSET			0x00003000
+  #define KERNELOFFSET			(PLATFORM_DEFAULT_MEM_START + 0x3000)
 
   /* Loaded just above possibly live vectors */
-  #define LOAD_MEMORY_ADDRESS		0x00003000
+  #define LOAD_MEMORY_ADDRESS		(PLATFORM_DEFAULT_MEM_START + 0x3000)
 
 #endif /* CONFIG_MMU */
 

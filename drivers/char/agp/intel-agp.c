@@ -14,9 +14,6 @@
 #include "intel-agp.h"
 #include <drm/intel-gtt.h>
 
-int intel_agp_enabled;
-EXPORT_SYMBOL(intel_agp_enabled);
-
 static int intel_fetch_size(void)
 {
 	int i;
@@ -806,8 +803,6 @@ static int agp_intel_probe(struct pci_dev *pdev,
 found_gmch:
 	pci_set_drvdata(pdev, bridge);
 	err = agp_add_bridge(bridge);
-	if (!err)
-		intel_agp_enabled = 1;
 	return err;
 }
 
@@ -925,5 +920,5 @@ static void __exit agp_intel_cleanup(void)
 module_init(agp_intel_init);
 module_exit(agp_intel_cleanup);
 
-MODULE_AUTHOR("Dave Jones <davej@redhat.com>");
+MODULE_AUTHOR("Dave Jones, Various @Intel");
 MODULE_LICENSE("GPL and additional rights");

@@ -128,22 +128,13 @@ struct in6_flowlabel_req {
  *	IPV6 extension headers
  */
 #if __UAPI_DEF_IPPROTO_V6
-enum {
-  IPPROTO_HOPOPTS = 0,		/* IPv6 hop-by-hop options      */
-#define IPPROTO_HOPOPTS		IPPROTO_HOPOPTS
-  IPPROTO_ROUTING = 43,		/* IPv6 routing header          */
-#define IPPROTO_ROUTING		IPPROTO_ROUTING
-  IPPROTO_FRAGMENT = 44,	/* IPv6 fragmentation header    */
-#define IPPROTO_FRAGMENT	IPPROTO_FRAGMENT
-  IPPROTO_ICMPV6 = 58,		/* ICMPv6                       */
-#define IPPROTO_ICMPV6		IPPROTO_ICMPV6
-  IPPROTO_NONE = 59,		/* IPv6 no next header          */
-#define IPPROTO_NONE		IPPROTO_NONE
-  IPPROTO_DSTOPTS = 60,		/* IPv6 destination options     */
-#define IPPROTO_DSTOPTS		IPPROTO_DSTOPTS
-  IPPROTO_MH = 135,		/* IPv6 mobility header         */
-#define IPPROTO_MH		IPPROTO_MH
-};
+#define IPPROTO_HOPOPTS		0	/* IPv6 hop-by-hop options	*/
+#define IPPROTO_ROUTING		43	/* IPv6 routing header		*/
+#define IPPROTO_FRAGMENT	44	/* IPv6 fragmentation header	*/
+#define IPPROTO_ICMPV6		58	/* ICMPv6			*/
+#define IPPROTO_NONE		59	/* IPv6 no next header		*/
+#define IPPROTO_DSTOPTS		60	/* IPv6 destination options	*/
+#define IPPROTO_MH		135	/* IPv6 mobility header		*/
 #endif /* __UAPI_DEF_IPPROTO_V6 */
 
 /*
@@ -158,7 +149,7 @@ enum {
 /*
  *	IPV6 socket options
  */
-
+#if __UAPI_DEF_IPV6_OPTIONS
 #define IPV6_ADDRFORM		1
 #define IPV6_2292PKTINFO	2
 #define IPV6_2292HOPOPTS	3
@@ -194,6 +185,10 @@ enum {
  * also see comments on IP_PMTUDISC_INTERFACE
  */
 #define IPV6_PMTUDISC_INTERFACE		4
+/* weaker version of IPV6_PMTUDISC_INTERFACE, which allows packets to
+ * get fragmented if they exceed the interface mtu
+ */
+#define IPV6_PMTUDISC_OMIT		5
 
 /* Flowlabel */
 #define IPV6_FLOWLABEL_MGR	32
@@ -201,6 +196,7 @@ enum {
 
 #define IPV6_IPSEC_POLICY	34
 #define IPV6_XFRM_POLICY	35
+#endif
 
 /*
  * Multicast:
@@ -266,6 +262,7 @@ enum {
  * IP6T_SO_ORIGINAL_DST		80
  */
 
+#define IPV6_AUTOFLOWLABEL	70
 /* RFC5014: Source address selection */
 #define IPV6_ADDR_PREFERENCES	72
 

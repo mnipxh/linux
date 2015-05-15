@@ -619,7 +619,7 @@ ltq_etop_set_multicast_list(struct net_device *dev)
 
 static u16
 ltq_etop_select_queue(struct net_device *dev, struct sk_buff *skb,
-		      void *accel_priv)
+		      void *accel_priv, select_queue_fallback_t fallback)
 {
 	/* we are currently only using the first queue */
 	return 0;
@@ -633,7 +633,6 @@ ltq_etop_init(struct net_device *dev)
 	int err;
 	bool random_mac = false;
 
-	ether_setup(dev);
 	dev->watchdog_timeo = 10 * HZ;
 	err = ltq_etop_hw_init(dev);
 	if (err)
@@ -790,7 +789,6 @@ static struct platform_driver ltq_mii_driver = {
 	.remove = ltq_etop_remove,
 	.driver = {
 		.name = "ltq_etop",
-		.owner = THIS_MODULE,
 	},
 };
 

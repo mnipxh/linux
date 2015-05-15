@@ -16,10 +16,6 @@
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59
- * Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- *
  * The full GNU General Public License is included in this distribution in the
  * file called COPYING.
  */
@@ -4114,6 +4110,7 @@ static int ppc440spe_adma_probe(struct platform_device *ofdev)
 	regs = ioremap(res.start, resource_size(&res));
 	if (!regs) {
 		dev_err(&ofdev->dev, "failed to ioremap regs!\n");
+		ret = -ENOMEM;
 		goto err_regs_alloc;
 	}
 
@@ -4578,7 +4575,6 @@ static struct platform_driver ppc440spe_adma_driver = {
 	.remove = ppc440spe_adma_remove,
 	.driver = {
 		.name = "PPC440SP(E)-ADMA",
-		.owner = THIS_MODULE,
 		.of_match_table = ppc440spe_adma_of_match,
 	},
 };

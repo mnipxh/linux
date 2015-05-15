@@ -203,12 +203,12 @@ void xhci_print_ir_set(struct xhci_hcd *xhci, int set_num)
 				addr, (unsigned int)temp);
 
 	addr = &ir_set->erst_base;
-	temp_64 = readq(addr);
+	temp_64 = xhci_read_64(xhci, addr);
 	xhci_dbg(xhci, "  %p: ir_set.erst_base = @%08llx\n",
 			addr, temp_64);
 
 	addr = &ir_set->erst_dequeue;
-	temp_64 = readq(addr);
+	temp_64 = xhci_read_64(xhci, addr);
 	xhci_dbg(xhci, "  %p: ir_set.erst_dequeue = @%08llx\n",
 			addr, temp_64);
 }
@@ -412,7 +412,7 @@ void xhci_dbg_cmd_ptrs(struct xhci_hcd *xhci)
 {
 	u64 val;
 
-	val = readq(&xhci->op_regs->cmd_ring);
+	val = xhci_read_64(xhci, &xhci->op_regs->cmd_ring);
 	xhci_dbg(xhci, "// xHC command ring deq ptr low bits + flags = @%08x\n",
 			lower_32_bits(val));
 	xhci_dbg(xhci, "// xHC command ring deq ptr high bits = @%08x\n",
@@ -552,7 +552,7 @@ void xhci_dbg_ctx(struct xhci_hcd *xhci,
 
 	if (ctx->type == XHCI_CTX_TYPE_INPUT) {
 		struct xhci_input_control_ctx *ctrl_ctx =
-			xhci_get_input_control_ctx(xhci, ctx);
+			xhci_get_input_control_ctx(ctx);
 		if (!ctrl_ctx) {
 			xhci_warn(xhci, "Could not get input context, bad type.\n");
 			return;
@@ -594,3 +594,4 @@ void xhci_dbg_trace(struct xhci_hcd *xhci, void (*trace)(struct va_format *),
 	trace(&vaf);
 	va_end(args);
 }
+EXPORT_SYMBOL_GPL(xhci_dbg_trace);
